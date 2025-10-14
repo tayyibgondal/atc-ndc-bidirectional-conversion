@@ -1,8 +1,10 @@
 # ATC <-> NDC Convertors
-
-Note: Paper implemented <> [Link](https://data.lhncbc.nlm.nih.gov/public/mor/pubs/alum/2022-oyarzun.pdf)
-
 Bidirectional conversion between ATC (Anatomical Therapeutic Chemical) and NDC (National Drug Code) systems using the RxNorm API.
+
+**Notes:** 
+- Paper implemented <> [Link](https://data.lhncbc.nlm.nih.gov/public/mor/pubs/alum/2022-oyarzun.pdf)
+- Searchable ATC Index <> [Link](https://atcddd.fhi.no/atc_ddd_index/)
+- Searchable NDC Index <> [Link](https://www.accessdata.fda.gov/scripts/cder/ndc/)
 
 ---
 
