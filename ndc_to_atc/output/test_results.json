@@ -1,0 +1,65 @@
+[
+  {
+    "ndc_code": "00067814801",
+    "ndc_formatted": "00067-8148-01",
+    "rxcui": "2047428",
+    "drug_name": "{100 (acetaminophen 250 MG / aspirin 250 MG / caffeine 65 MG Oral Tablet [Excedrin]) / 24 (acetaminophen 250 MG / aspirin 250 MG / diphenhydramine citrate 38 MG Oral Tablet [Excedrin PM Triple Action]) } Pack [Excedrin PM Triple Action Caplets and Excedrin Extra Strength Pain Reliever]",
+    "atc_codes": [
+      {
+        "atc_code": "A01AD",
+        "class_name": "Other agents for local oral treatment",
+        "class_type": "ATC1-4"
+      },
+      {
+        "atc_code": "B01AC",
+        "class_name": "Platelet aggregation inhibitors excl. heparin",
+        "class_type": "ATC1-4"
+      },
+      {
+        "atc_code": "N02BA",
+        "class_name": "Salicylic acid and derivatives",
+        "class_type": "ATC1-4"
+      },
+      {
+        "atc_code": "N02BE",
+        "class_name": "Anilides",
+        "class_type": "ATC1-4"
+      },
+      {
+        "atc_code": "D11AX",
+        "class_name": "Other dermatologicals",
+        "class_type": "ATC1-4"
+      },
+      {
+        "atc_code": "N06BC",
+        "class_name": "Xanthine derivatives",
+        "class_type": "ATC1-4"
+      },
+      {
+        "atc_code": "D04AA",
+        "class_name": "Antihistamines for topical use",
+        "class_type": "ATC1-4"
+      },
+      {
+        "atc_code": "R06AA",
+        "class_name": "Aminoalkyl ethers",
+        "class_type": "ATC1-4"
+      }
+    ],
+    "atc_count": 8
+  },
+  {
+    "ndc_code": "47335098560",
+    "ndc_formatted": "47335-0985-60",
+    "rxcui": "2167563",
+    "drug_name": "rosuvastatin 10 MG Oral Capsule [Ezallor]",
+    "atc_codes": [
+      {
+        "atc_code": "C10AA",
+        "class_name": "HMG CoA reductase inhibitors",
+        "class_type": "ATC1-4"
+      }
+    ],
+    "atc_count": 1
+  }
+]
