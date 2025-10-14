@@ -1,12 +1,12 @@
-# Drug Code Conversion Suite
+# ATC <-> NDC Convertors
 
-Professional bidirectional conversion between ATC (Anatomical Therapeutic Chemical) and NDC (National Drug Code) systems using the RxNorm API.
+Note: Paper implemented <> [Link](https://data.lhncbc.nlm.nih.gov/public/mor/pubs/alum/2022-oyarzun.pdf)
 
-**Status:** ✅ Production-Ready | **Version:** 1.0 | **Date:** October 2025
+Bidirectional conversion between ATC (Anatomical Therapeutic Chemical) and NDC (National Drug Code) systems using the RxNorm API.
 
 ---
 
-## 📦 Project Structure
+## Project Structure
 
 ```
 atc-ndc/
@@ -30,63 +30,49 @@ atc-ndc/
 
 ---
 
-## 🚀 Quick Start
+## Code Systems Explained
 
-### Installation (1 minute)
+### ATC (Anatomical Therapeutic Chemical Classification)
 
-```bash
-cd atc-ndc
-pip install -r requirements.txt
-```
+- **Maintained by:** WHO (World Health Organization)
+- **Purpose:** International drug classification by therapeutic use
+- **Format:** 7 characters (e.g., `C10AA07`)
+- **Hierarchy:** 5 levels from organ system to chemical substance
 
-### ATC → NDC Conversion
+**Example Structure:**
+- `C` = Cardiovascular system (Level 1)
+- `C10` = Lipid modifying agents (Level 2)
+- `C10A` = Lipid modifying agents, plain (Level 3)
+- `C10AA` = HMG CoA reductase inhibitors (Level 4)
+- `C10AA07` = Rosuvastatin (Level 5)
 
-Convert international drug codes to US product codes:
+### NDC (National Drug Code)
 
-```bash
-cd atc_to_ndc
-python atc_to_ndc_converter.py C10AA07
-```
+- **Maintained by:** FDA (US Food and Drug Administration)
+- **Purpose:** Unique identifier for drug products in the US
+- **Format:** 10-11 digits, displayed as `5-4-2` (e.g., `47335-0985-60`)
 
-**Example Output:**
-```
-ATC CODE: C10AA07
-Drug Name: rosuvastatin
-Found 26 NDC codes
-```
+**Segments:**
+1. **Labeler** (manufacturer): `47335`
+2. **Product** (drug, strength, form): `0985`
+3. **Package** (size and type): `60`
 
-### NDC → ATC Conversion
+### The Conversion Challenge
 
-Convert US product codes to international drug classifications:
+**ATC → NDC (One-to-Many):**
+- One ATC code maps to many NDC codes
+- Different manufacturers, strengths, and packages
+- Example: `C10AA07` → 100+ different NDC products
 
-```bash
-cd ndc_to_atc
-python ndc_to_atc_converter.py 47335098560
-```
-
-**Example Output:**
-```
-NDC CODE: 47335-0985-60
-Drug Name: rosuvastatin 10 MG Oral Capsule [Ezallor]
-Found 1 ATC code: C10AA - HMG CoA reductase inhibitors
-```
-
-### Common Options
-
-```bash
-# Save results to files (JSON and CSV)
-python converter.py CODE --output results
-
-# Verbose mode (see detailed API calls)
-python converter.py CODE --verbose
-
-# Multiple codes at once
-python converter.py CODE1 CODE2 CODE3
-```
+**NDC → ATC (Many-to-One):**
+- One NDC code typically maps to one ATC classification
+- May return class-level (C10AA) rather than substance-level (C10AA07)
+- ATC codes are assigned at ingredient level in RxNorm
 
 ---
 
-## 📚 Modules Overview
+
+## Modules Overview
 
 ### Module 1: ATC → NDC Converter
 
@@ -138,7 +124,64 @@ Converts NDC codes (FDA US product identifiers) to ATC codes (WHO international 
 
 ---
 
-## 💡 Usage Examples
+
+## Quick Start
+
+### Installation (1 minute)
+
+```bash
+cd atc-ndc-bidirectional-conversion
+pip install -r requirements.txt
+```
+
+### ATC → NDC Conversion
+
+Convert international drug codes to US product codes:
+
+```bash
+cd atc_to_ndc
+python atc_to_ndc_converter.py C10AA07
+```
+
+**Example Output:**
+```
+ATC CODE: C10AA07
+Drug Name: rosuvastatin
+Found 26 NDC codes
+```
+
+### NDC → ATC Conversion
+
+Convert US product codes to international drug classifications:
+
+```bash
+cd ndc_to_atc
+python ndc_to_atc_converter.py 47335098560
+```
+
+**Example Output:**
+```
+NDC CODE: 47335-0985-60
+Drug Name: rosuvastatin 10 MG Oral Capsule [Ezallor]
+Found 1 ATC code: C10AA - HMG CoA reductase inhibitors
+```
+
+### Common Options
+
+```bash
+# Save results to files (JSON and CSV)
+python converter.py CODE --output results
+
+# Verbose mode (see detailed API calls)
+python converter.py CODE --verbose
+
+# Multiple codes at once
+python converter.py CODE1 CODE2 CODE3
+```
+
+---
+
+## (Detailed) Usage Examples
 
 ### Command Line Interface
 
@@ -196,85 +239,7 @@ for result in results:
 
 ---
 
-## 📊 Code Systems Explained
-
-### ATC (Anatomical Therapeutic Chemical Classification)
-
-- **Maintained by:** WHO (World Health Organization)
-- **Purpose:** International drug classification by therapeutic use
-- **Format:** 7 characters (e.g., `C10AA07`)
-- **Hierarchy:** 5 levels from organ system to chemical substance
-
-**Example Structure:**
-- `C` = Cardiovascular system (Level 1)
-- `C10` = Lipid modifying agents (Level 2)
-- `C10A` = Lipid modifying agents, plain (Level 3)
-- `C10AA` = HMG CoA reductase inhibitors (Level 4)
-- `C10AA07` = Rosuvastatin (Level 5)
-
-### NDC (National Drug Code)
-
-- **Maintained by:** FDA (US Food and Drug Administration)
-- **Purpose:** Unique identifier for drug products in the US
-- **Format:** 10-11 digits, displayed as `5-4-2` (e.g., `47335-0985-60`)
-
-**Segments:**
-1. **Labeler** (manufacturer): `47335`
-2. **Product** (drug, strength, form): `0985`
-3. **Package** (size and type): `60`
-
-### The Conversion Challenge
-
-**ATC → NDC (One-to-Many):**
-- One ATC code maps to many NDC codes
-- Different manufacturers, strengths, and packages
-- Example: `C10AA07` → 100+ different NDC products
-
-**NDC → ATC (Many-to-One):**
-- One NDC code typically maps to one ATC classification
-- May return class-level (C10AA) rather than substance-level (C10AA07)
-- ATC codes are assigned at ingredient level in RxNorm
-
----
-
-## 🧪 Testing & Validation
-
-### Test ATC Codes
-
-| Code | Drug | Category | Expected NDCs |
-|------|------|----------|---------------|
-| C10AA07 | Rosuvastatin | Cholesterol | 25+ |
-| N02BE01 | Paracetamol | Pain reliever | 20+ |
-| J01CA04 | Amoxicillin | Antibiotic | 10+ |
-| C09AA02 | Enalapril | Blood pressure | 15+ |
-| A10BA02 | Metformin | Diabetes | 20+ |
-
-### Test NDC Codes
-
-| Code | Drug | Expected ATC |
-|------|------|--------------|
-| 47335098560 | Rosuvastatin 10mg | C10AA |
-| 00310759030 | Rosuvastatin 40mg | C10AA |
-| 50090406300 | Acetaminophen 500mg | N02BE |
-| 00781150610 | Amoxicillin 500mg | J01CA |
-
-### Testing Status
-
-**ATC → NDC Module:**
-- ✅ Single conversion: PASSED
-- ✅ Batch conversion: PASSED
-- ✅ JSON/CSV export: PASSED
-- ✅ Related forms: PASSED
-
-**NDC → ATC Module:**
-- ✅ Single conversion: PASSED
-- ✅ Batch conversion: PASSED
-- ✅ Ingredient resolution: PASSED
-- ✅ Format normalization: PASSED
-
----
-
-## 🔧 Technical Details
+## Technical Details
 
 ### Requirements
 
@@ -282,14 +247,6 @@ for result in results:
 - **Dependencies:** `requests>=2.31.0`
 - **Internet:** Required for RxNorm API access
 - **API:** Free RxNorm REST API (no authentication)
-
-### Code Statistics
-
-- **Total Lines of Code:** 1,022
-- **ATC→NDC Module:** 494 lines
-- **NDC→ATC Module:** 528 lines
-- **Documentation:** 7 markdown files
-- **Test Coverage:** All features verified
 
 ### API Information
 
@@ -307,34 +264,9 @@ for result in results:
 - `/rxclass/class/byRxcui.json` - ATC classification
 - `/rxcui/{rxcui}/related.json` - Related concepts
 
-### Key Features
-
-**ATC → NDC Converter:**
-- Correctly handles one-to-many relationship
-- Discovers related drug forms for comprehensive coverage
-- Returns 20-100+ NDC codes per ATC code
-- Formats NDC codes in standard 5-4-2 format
-- Session management for efficient API calls
-
-**NDC → ATC Converter:**
-- Two-tier lookup (product → ingredient level)
-- Resolves to ingredient-level for ATC codes
-- Normalizes all NDC format variations (10-digit, 11-digit, hyphenated)
-- Returns therapeutic class codes (ATC1-4 level)
-- Removes duplicate classifications
-
-### Code Quality
-
-✅ **Type Hints:** Full type annotations throughout  
-✅ **Docstrings:** Comprehensive documentation  
-✅ **Error Handling:** Robust exception management  
-✅ **API Best Practices:** Session reuse, timeout handling  
-✅ **Logging:** Verbose mode for debugging  
-✅ **Clean Code:** Professional, readable, maintainable  
-
 ---
 
-## 📦 Output Formats
+## Available Output Formats
 
 ### Console Output
 
@@ -364,55 +296,7 @@ C10AA07,301542,rosuvastatin,47335098560,47335-0985-60
 ```
 
 ---
-
-## 🎯 Use Cases
-
-### Healthcare Research
-- Map international drug studies to US products
-- Analyze drug utilization by therapeutic class
-- Cross-reference clinical trial data
-
-### Pharmaceutical Industry
-- Market analysis by drug class
-- Competitive intelligence
-- Product mapping across systems
-
-### Healthcare IT
-- EHR system integration
-- Drug database synchronization
-- Insurance formulary management
-
-### Regulatory Compliance
-- FDA reporting requirements
-- International drug classification
-- Pharmacovigilance systems
-
----
-
-## ⚠️ Important Notes
-
-### Data Completeness
-- Not all ATC codes have NDC codes (US market only)
-- Not all NDC codes have ATC classifications assigned
-- Mappings depend on RxNorm database updates
-
-### ATC Code Levels
-- NDC→ATC often returns class-level (C10AA) rather than specific substance (C10AA07)
-- This is expected: ATC codes are assigned at ingredient level in RxNorm
-
-### NDC Format
-- NDC codes can be 10 or 11 digits
-- Converter normalizes all formats automatically
-- Output formatted as standard 5-4-2
-
-### API Usage
-- Be respectful of the free RxNorm API
-- Consider caching for repeated queries
-- Implement delays for large batch operations (>100 codes)
-
----
-
-## 🏗️ Architecture
+## Architecture Summary
 
 ### Design Principles
 
@@ -447,15 +331,34 @@ C10AA07,301542,rosuvastatin,47335098560,47335-0985-60
 
 ---
 
-## 📖 Documentation
 
-### Module Documentation
-- **ATC→NDC:** [`atc_to_ndc/README.md`](atc_to_ndc/README.md)
-- **NDC→ATC:** [`ndc_to_atc/README.md`](ndc_to_atc/README.md)
+## ⚠️ Important Notes
 
-### Research Papers
-- Both modules include: `docs/ndc-atc conversion.pdf`
-- Covers methodology for NDC→ATC mapping
+### Data Completeness
+- Not all ATC codes have NDC codes (US market only)
+- Not all NDC codes have ATC classifications assigned
+- Mappings depend on RxNorm database updates
+
+### ATC Code Levels
+- NDC→ATC often returns class-level (C10AA) rather than specific substance (C10AA07)
+- This is expected: ATC codes are assigned at ingredient level in RxNorm
+
+### NDC Format
+- NDC codes can be 10 or 11 digits
+- Converter normalizes all formats automatically
+- Output formatted as standard 5-4-2
+
+### API Usage
+- Be respectful of the free RxNorm API
+- Consider caching for repeated queries
+- Implement delays for large batch operations (>100 codes)
+
+---
+
+## External sources
+
+### Research Paper Used
+- Mapping NDC Codes to ATC Classification: https://data.lhncbc.nlm.nih.gov/public/mor/pubs/alum/2022-oyarzun.pdf
 
 ### External Resources
 - **RxNorm API:** https://lhncbc.nlm.nih.gov/RxNav/APIs/
@@ -464,72 +367,8 @@ C10AA07,301542,rosuvastatin,47335098560,47335-0985-60
 
 ---
 
-## 🆘 Support & Troubleshooting
 
-### Common Issues
+## Contributing
 
-**"No RxCUI found"**
-- Verify code format (ATC: 7 chars, NDC: 10-11 digits)
-- Check if drug is in RxNorm database
-- For NDC: Drug may be discontinued or delisted
+Any contributions are welcome.
 
-**"No ATC/NDC codes found"**
-- ATC→NDC: Drug may not be marketed in US
-- NDC→ATC: ATC classification may not be assigned
-- Database mapping may be incomplete
-
-**API Errors**
-- Check internet connectivity
-- Verify RxNorm API status
-- Review API usage limits
-
-### Getting Help
-
-1. Check module README files for detailed info
-2. Review RxNorm API documentation
-3. Verify Python version (3.7+) and dependencies
-4. Test with known working codes from tables above
-
----
-
-## 🤝 Contributing
-
-This is a professional-grade tool for healthcare informatics. When extending:
-
-1. Maintain code quality standards
-2. Add comprehensive tests
-3. Update documentation
-4. Follow existing patterns
-5. Respect API usage guidelines
-
----
-
-## 📄 License
-
-This project uses free public APIs and is provided for educational and professional use in healthcare informatics.
-
----
-
-## ✅ Project Status
-
-**Status:** Production-Ready  
-**Quality:** Professional Grade  
-**Testing:** Comprehensive  
-**Documentation:** Complete  
-
-Both modules are:
-- ✅ Fully implemented
-- ✅ Thoroughly tested
-- ✅ Professionally documented
-- ✅ Ready for immediate use
-
-**No further work required.**
-
----
-
-**Project:** Drug Code Conversion Suite  
-**Version:** 1.0  
-**Date:** October 2025  
-**Maintainer:** Healthcare Informatics Team  
-
-**⚡ Both modules are production-ready and fully tested.**
