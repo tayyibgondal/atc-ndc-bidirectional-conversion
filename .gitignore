@@ -1,1 +1,28 @@
 venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Data files (large downloads)
+data/
+*.zip
+*.txt
+*.csv
+
+# Generated files
+*.pptx
+generate_presentation.py
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

@@ -362,6 +362,28 @@ C10AA07,301542,rosuvastatin,47335098560,47335-0985-60
 ### Research Paper Used
 - Mapping NDC Codes to ATC Classification: https://data.lhncbc.nlm.nih.gov/public/mor/pubs/alum/2022-oyarzun.pdf
 
+### Downloadable Mapping Data
+📖 **[Mappings Folder](mappings/)** - Scripts and guide for downloading code mappings:
+- ATC code → description mappings (all 5 levels)
+- NDC code → product description mappings (3-segment breakdown)
+- Complete hierarchical information
+
+**Quick Download:**
+```bash
+cd mappings/
+
+# Download ATC codes (1,316 codes)
+python download_mappings.py --atc
+
+# Download NDC codes (5,000 codes)
+python download_ndc_via_api.py --limit 5000
+
+# For enhanced versions with hierarchies
+python fix_atc_hierarchy.py
+```
+
+See [mappings/README.md](mappings/README.md) for complete documentation.
+
 ### External Resources
 - **RxNorm API:** https://lhncbc.nlm.nih.gov/RxNav/APIs/
 - **WHO ATC Index:** https://www.whocc.no/atc_ddd_index/
