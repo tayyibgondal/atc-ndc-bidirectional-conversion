@@ -40,34 +40,78 @@ python download_all_mappings.py
 
 ---
 
-## 📊 Example Usage
+## 🔍 Quick Code Lookup
+
+**Easiest way - use the lookup script:**
+
+```bash
+# Look up any ATC code
+python lookup_code.py C10AA07
+
+# Look up any NDC code  
+python lookup_code.py 22840-5322
+
+# Works with any level
+python lookup_code.py C10AA    # ATC class
+```
+
+**Output includes:**
+- ATC: Complete 5-level hierarchy + descriptions
+- NDC: Product details, manufacturer, ingredients
+
+---
+
+## 📊 Use in Your Code
+
+### Option 1: Use lookup function (easiest)
+
+```python
+from lookup_code import lookup_code
+
+# Get formatted description string
+description = lookup_code("C10AA07")
+print(description)
+# Outputs complete hierarchy
+
+description = lookup_code("22840-5322")
+print(description)
+# Outputs product details
+```
+
+### Option 2: Load JSON directly
 
 ```python
 import json
 
 # Load ALL codes
-atc = json.load(open('../data/atc_mapping_complete.json'))
-ndc = json.load(open('../data/ndc_mapping_simple.json'))
+atc = json.load(open('data/atc_mapping_complete.json'))
+ndc = json.load(open('data/ndc_mapping_simple.json'))
 
 # Look up any code
 print(atc['C10AA07'])  
-# Returns complete hierarchy for rosuvastatin
+# Returns dict with complete hierarchy
 
-print(ndc['47335-0985-60'])  
-# Returns: "rosuvastatin 10 MG Oral Capsule [Ezallor] - CAPSULE (ORAL)"
-
+print(ndc['22840-5322'])  
+# Returns: "Rabbit Bush - SOLUTION..."
 ```
 
 ---
 
 ## 📁 Files in This Folder
 
-### ⭐ Main Script (Use This):
+### ⭐ Main Scripts:
+
 **`download_all_mappings.py`**
 - Downloads ALL ATC and NDC codes
-- Shows progress bars
+- Shows progress bars  
 - Takes ~30-40 minutes
 - No limits - complete datasets
+
+**`lookup_code.py`** ✨ NEW!
+- Quick code lookup tool
+- Type any ATC or NDC code
+- Returns formatted description
+- Auto-detects code type
 
 ### Individual Step Scripts:
 1. **`step1_download_atc_basic.py`** - Download ATC Levels 1-4
