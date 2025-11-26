@@ -39,7 +39,7 @@ python download_all_mappings.py
    - Simple code → description mapping
 
 ---
-
+     
 ## 🔍 Quick Code Lookup
 
 **Easiest way - use the lookup script:**

@@ -87,12 +87,13 @@ def main():
     print("\n📁 Files Created (in ../data/):")
     print("  1. atc_mapping.json              - Basic ATC codes (Levels 1-4)")
     print("  2. atc_mapping_complete.json     - Complete ATC (all 5 levels, ~1,350 codes)")
-    print("  3. ndc_mapping.json              - NDC full details (~100,000+ codes)")
-    print("  4. ndc_mapping_simple.json       - NDC simple descriptions (~100,000+ codes)")
+    print("  3. ndc_mapping.json              - NDC full details (~135,000 codes)")
+    print("  4. ndc_mapping_simple.json       - NDC simple descriptions (~135,000 codes)")
     
     print("\n📊 Dataset Statistics:")
-    print("  • ATC Codes: ~1,350 (complete hierarchy)")
-    print("  • NDC Codes: ~100,000+ (all FDA products)")
+    print("  • ATC Codes: ~1,350 (complete hierarchy, all 5 levels)")
+    print("  • NDC Codes: ~135,000 (99.5% of all FDA products)")
+    print("  • Coverage: Complete datasets with normalized formats")
     
     print("\n💡 Usage Example:")
     print("  import json")

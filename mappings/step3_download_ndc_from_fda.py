@@ -21,6 +21,253 @@ import requests
 from tqdm import tqdm
 
 
+def download_all_ndc_with_search_strategy(total_available: int) -> Dict[str, Dict]:
+    """
+    Download ALL NDC codes using search strategy to bypass 25K skip limit.
+    
+    Strategy: 
+    1. Split by product type
+    2. For large types (>25K), further split by generic_name first letter
+    3. Get any remaining codes
+    """
+    ndc_mapping = {}
+    
+    # Small product types (< 25K each)
+    small_types = [
+        'BULK INGREDIENT',
+        'DRUG FOR FURTHER PROCESSING',
+        'NON-STANDARDIZED ALLERGENIC',
+        'STANDARDIZED ALLERGENIC',
+        'PLASMA DERIVATIVE',
+        'CELLULAR THERAPY',
+        'VACCINE',
+    ]
+    
+    # Large product types (> 25K each) - need alphabet split
+    large_types = [
+        'HUMAN PRESCRIPTION DRUG',
+        'HUMAN OTC DRUG',
+    ]
+    
+    print(f"\n🔄 Using multi-query strategy to download all {total_available:,} codes")
+    print(f"📊 Strategy: Split by product type + alphabet for large categories\n")
+    
+    overall_pbar = tqdm(total=total_available, desc="Overall progress", unit="codes")
+    
+    # Download small product types
+    for product_type in small_types:
+        search_query = f'product_type:"{product_type}"'
+        print(f"\n📦 Downloading: {product_type}")
+        
+        type_codes = download_with_search(search_query, max_skip=25000)
+        
+        for ndc, info in type_codes.items():
+            if ndc not in ndc_mapping:
+                ndc_mapping[ndc] = info
+                overall_pbar.update(1)
+    
+    # Download large product types with alphabet splitting
+    for product_type in large_types:
+        print(f"\n📦 Downloading: {product_type} (with alphabet split)")
+        
+        # Split by first letter of generic name (A-Z plus numbers/special)
+        for letter in list('ABCDEFGHIJKLMNOPQRSTUVWXYZ') + ['0-9']:
+            if letter == '0-9':
+                # Get products starting with numbers
+                search_query = f'product_type:"{product_type}" AND generic_name:[0 TO 9]'
+            else:
+                # Get products starting with this letter
+                search_query = f'product_type:"{product_type}" AND generic_name:{letter}*'
+            
+            type_codes = download_with_search(search_query, max_skip=25000, silent=True)
+            
+            for ndc, info in type_codes.items():
+                if ndc not in ndc_mapping:
+                    ndc_mapping[ndc] = info
+                    overall_pbar.update(1)
+            
+            # Show progress every few letters
+            if len(letter) == 1 and ord(letter) % 3 == 0:
+                overall_pbar.set_postfix_str(f"{product_type[:20]}... letter {letter}")
+    
+    # Get any remaining codes not captured by product_type
+    print(f"\n📦 Downloading: Remaining codes without product_type")
+    remaining = download_simple_batch(skip=0, limit=25000, existing_codes=set(ndc_mapping.keys()))
+    
+    for ndc, info in remaining.items():
+        if ndc not in ndc_mapping:
+            ndc_mapping[ndc] = info
+            overall_pbar.update(1)
+    
+    overall_pbar.close()
+    
+    print(f"\n✅ Downloaded {len(ndc_mapping):,} unique NDC codes")
+    print(f"📊 Coverage: {len(ndc_mapping)/total_available*100:.1f}% of available codes")
+    
+    return ndc_mapping
+
+
+def download_with_search(search_query: str, max_skip: int = 25000, silent: bool = False) -> Dict[str, Dict]:
+    """Download NDC codes using a search query."""
+    ndc_mapping = {}
+    skip = 0
+    batch_size = 1000
+    
+    while skip < max_skip:
+        try:
+            url = f"https://api.fda.gov/drug/ndc.json?search={search_query}&skip={skip}&limit={batch_size}"
+            response = requests.get(url, timeout=30)
+            
+            if response.status_code != 200:
+                if not silent:
+                    print(f"  ⚠️  API returned status {response.status_code}")
+                break
+            
+            data = response.json()
+            results = data.get('results', [])
+            
+            if not results:
+                break
+            
+            # Process results
+            for record in results:
+                ndc_code = normalize_ndc_code(record.get('product_ndc', '').strip())
+                if ndc_code:
+                    ndc_mapping[ndc_code] = extract_product_info(record)
+            
+            skip += len(results)
+            time.sleep(0.5)
+            
+            if len(results) < batch_size:
+                break
+                
+        except Exception as e:
+            if not silent:
+                print(f"  ⚠️  Error at skip={skip}: {e}")
+            break
+    
+    if not silent and ndc_mapping:
+        print(f"  ✓ Got {len(ndc_mapping):,} codes")
+    
+    return ndc_mapping
+
+
+def download_simple_batch(skip: int, limit: int, existing_codes: set) -> Dict[str, Dict]:
+    """Download a simple batch without search."""
+    ndc_mapping = {}
+    current_skip = skip
+    batch_size = 1000
+    
+    while current_skip < limit:
+        results = fetch_ndc_batch(skip=current_skip, limit=batch_size)
+        
+        if not results:
+            break
+        
+        for record in results:
+            ndc_code = normalize_ndc_code(record.get('product_ndc', '').strip())
+            if ndc_code and ndc_code not in existing_codes:
+                ndc_mapping[ndc_code] = extract_product_info(record)
+        
+        current_skip += len(results)
+        time.sleep(0.5)
+        
+        if len(results) < batch_size:
+            break
+    
+    return ndc_mapping
+
+
+def extract_product_info(record: Dict) -> Dict:
+    """Extract product information from FDA record."""
+    brand_name = record.get('brand_name', '')
+    generic_name = record.get('generic_name', '')
+    dosage_form = record.get('dosage_form', '')
+    route = ', '.join(record.get('route', [])) if record.get('route') else ''
+    
+    # Get active ingredients
+    active_ingredients = []
+    if record.get('active_ingredients'):
+        for ing in record.get('active_ingredients', []):
+            name = ing.get('name', '')
+            strength = ing.get('strength', '')
+            if name:
+                active_ingredients.append(f"{name} {strength}".strip())
+    
+    # Get manufacturer
+    labeler = record.get('labeler_name', '')
+    
+    # Build description
+    description = brand_name or generic_name or "Unknown Product"
+    if dosage_form:
+        description += f" - {dosage_form}"
+    if route:
+        description += f" ({route})"
+    
+    return {
+        'description': description,
+        'brand_name': brand_name,
+        'generic_name': generic_name,
+        'dosage_form': dosage_form,
+        'route': route,
+        'active_ingredients': active_ingredients,
+        'labeler': labeler,
+        'product_type': record.get('product_type', '')
+    }
+
+
+def normalize_ndc_code(ndc_code: str) -> str:
+    """
+    Normalize NDC code to FDA standard format.
+    
+    Converts to 5-4-2 (11 digits) for full codes or 5-4 (9 digits) for product-level.
+    
+    Examples:
+        "0299-3847" (4-4) → "00299-3847" (5-4)
+        "63187-794" (5-3) → "63187-0794" (5-4)
+        "12345-6789-0" (5-4-1) → "12345-6789-00" (5-4-2)
+        "0299-3847-12" (4-4-2) → "00299-3847-12" (5-4-2)
+    
+    Args:
+        ndc_code: NDC code in any format
+    
+    Returns:
+        Normalized NDC code in 5-4-2 or 5-4 format
+    """
+    if not ndc_code:
+        return ndc_code
+    
+    # Remove extra spaces
+    ndc_code = ndc_code.strip()
+    
+    # Check if it has hyphens
+    if '-' not in ndc_code:
+        # No hyphens - can't reliably determine format, return as-is
+        return ndc_code
+    
+    parts = ndc_code.split('-')
+    
+    if len(parts) == 2:
+        # Product-level code: labeler-product
+        labeler, product = parts
+        # Normalize to 5-4 format
+        labeler = labeler.zfill(5)  # Pad to 5 digits
+        product = product.zfill(4)  # Pad to 4 digits
+        return f"{labeler}-{product}"
+    
+    elif len(parts) == 3:
+        # Full NDC: labeler-product-package
+        labeler, product, package = parts
+        # Normalize to 5-4-2 format
+        labeler = labeler.zfill(5)  # Pad to 5 digits
+        product = product.zfill(4)  # Pad to 4 digits
+        package = package.zfill(2)  # Pad to 2 digits
+        return f"{labeler}-{product}-{package}"
+    
+    # If format is unexpected, return as-is
+    return ndc_code
+
+
 def fetch_ndc_batch(skip: int = 0, limit: int = 100) -> List[Dict]:
     """
     Fetch a batch of NDC codes from FDA API.
@@ -63,30 +310,40 @@ def download_ndc_mappings(total_limit: int = 10000) -> Dict[str, Dict]:
     print("="*80)
     
     ndc_mapping = {}
-    skip = 0
-    batch_size = 1000  # FDA API max per request
     
-    # Determine total to fetch
+    # Check if we need to download ALL codes
     if total_limit == -1:
         # First, get the total count
         try:
             response = requests.get("https://api.fda.gov/drug/ndc.json?limit=1", timeout=10)
             data = response.json()
             total_available = data.get('meta', {}).get('results', {}).get('total', 100000)
-            total_limit = total_available
             print(f"📊 Total NDC codes available: {total_available:,}")
-        except:
-            total_limit = 100000  # Fallback
-            print("⚠️  Could not determine total, will fetch up to 100,000")
+            print(f"⚠️  FDA API has skip limit of 25,000")
+            print(f"📍 Using search strategy to download all {total_available:,} codes...")
+            
+            # Use search strategy to get all codes
+            return download_all_ndc_with_search_strategy(total_available)
+            
+        except Exception as e:
+            print(f"⚠️  Error: {e}")
+            print("⚠️  Falling back to simple download (25,000 limit)")
+            total_limit = 25000
     
-    print(f"🎯 Target: Download {total_limit:,} NDC codes\n")
+    # Simple download for limited requests (up to 25K due to FDA skip limit)
+    print(f"🎯 Target: Download {min(total_limit, 25000):,} NDC codes")
+    print(f"⚠️  Note: FDA API has 25K skip limit\n")
+    
+    skip = 0
+    batch_size = 1000  # FDA API max per request
+    max_skip = min(total_limit, 25000)  # FDA API skip limit
     
     # Create progress bar
-    pbar = tqdm(total=total_limit, desc="Downloading NDC codes", unit="codes", 
+    pbar = tqdm(total=max_skip, desc="Downloading NDC codes", unit="codes", 
                 bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]')
     
-    while skip < total_limit:
-        remaining = total_limit - skip
+    while skip < max_skip:
+        remaining = max_skip - skip
         current_batch_size = min(batch_size, remaining)
         
         results = fetch_ndc_batch(skip=skip, limit=current_batch_size)
@@ -99,48 +356,15 @@ def download_ndc_mappings(total_limit: int = 10000) -> Dict[str, Dict]:
         for record in results:
             # Get NDC code (various formats in FDA data)
             product_ndc = record.get('product_ndc', '').strip()
-            package_ndc = record.get('packaging', [{}])[0].get('package_ndc', '').strip() if record.get('packaging') else ''
-            ndc_code = product_ndc or package_ndc
             
-            if not ndc_code:
+            if not product_ndc:
                 continue
             
-            # Extract product information
-            brand_name = record.get('brand_name', '')
-            generic_name = record.get('generic_name', '')
-            dosage_form = record.get('dosage_form', '')
-            route = ', '.join(record.get('route', [])) if record.get('route') else ''
+            # Normalize NDC code to FDA standard format (5-4-2 or 5-4)
+            ndc_code = normalize_ndc_code(product_ndc)
             
-            # Get active ingredients
-            active_ingredients = []
-            if record.get('active_ingredients'):
-                for ing in record.get('active_ingredients', []):
-                    name = ing.get('name', '')
-                    strength = ing.get('strength', '')
-                    if name:
-                        active_ingredients.append(f"{name} {strength}".strip())
-            
-            # Get manufacturer
-            labeler = record.get('labeler_name', '')
-            
-            # Build description
-            description = brand_name or generic_name or "Unknown Product"
-            if dosage_form:
-                description += f" - {dosage_form}"
-            if route:
-                description += f" ({route})"
-            
-            # Store full info
-            ndc_mapping[ndc_code] = {
-                'description': description,
-                'brand_name': brand_name,
-                'generic_name': generic_name,
-                'dosage_form': dosage_form,
-                'route': route,
-                'active_ingredients': active_ingredients,
-                'labeler': labeler,
-                'product_type': record.get('product_type', '')
-            }
+            if ndc_code:
+                ndc_mapping[ndc_code] = extract_product_info(record)
         
         skip += len(results)
         pbar.update(len(results))
