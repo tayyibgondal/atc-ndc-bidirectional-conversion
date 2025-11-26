@@ -80,21 +80,13 @@ def format_atc_description(code, atc_data):
     
     # Try to find exact match first
     if code not in atc_data:
-        # Try fallback to higher levels
-        fallback_codes = []
-        if len(code) >= 7:  # Level 5 → try Level 4
-            fallback_codes.append(code[:5])
-        if len(code) >= 5:  # Level 4 → try Level 3
-            fallback_codes.append(code[:4])
-        if len(code) >= 4:  # Level 3 → try Level 2
-            fallback_codes.append(code[:3])
-        if len(code) >= 3:  # Level 2 → try Level 1
-            fallback_codes.append(code[0])
-        
-        # Try each fallback
-        for fallback in fallback_codes:
-            if fallback in atc_data:
-                info = atc_data[fallback]
+        # Try fallback to higher levels by progressively removing last character
+        # Stop as soon as we find a match (closest parent level)
+        current = code
+        while len(current) > 0:
+            current = current[:-1]  # Remove last character
+            if current in atc_data:
+                info = atc_data[current]
                 lines = []
                 lines.append(f"⚠️  Exact code '{code}' not found. Showing parent level:")
                 lines.append("")
