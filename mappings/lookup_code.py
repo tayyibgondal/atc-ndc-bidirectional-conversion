@@ -135,53 +135,47 @@ def format_atc_description(code, atc_data):
 
 def normalize_ndc_to_variants(code):
     """
-    Generate all possible NDC code variants according to FDA standards.
+    Generate NDC code variants normalized to 5-4 format (product level).
+    
+    The NDC mapping uses 5-4 format (labeler-product), so we normalize all inputs to that.
     
     NDC formats:
-    - 4-4-2 (10 digits) → normalize to 5-4-2 (pad first segment)
-    - 5-3-2 (10 digits) → normalize to 5-4-2 (pad second segment)
-    - 5-4-1 (10 digits) → normalize to 5-4-2 (pad third segment)
-    - 5-4-2 (11 digits) → already normalized
+    - 11 digits (5-4-2): strip package segment → 5-4
+    - 10 digits: could be 4-4-2, 5-3-2, or 5-4-1 → normalize to 5-4
+    - 9 digits: pad to get 5-4
     """
     variants = set()
-    code_clean = code.replace('-', '').replace(' ', '')
+    code_clean = code.replace('-', '').replace(' ', '').strip()
     
-    # Add original formats
+    # Add original format
     variants.add(code)
-    variants.add(code_clean)
     
     if len(code_clean) == 11:
-        # 11 digits - try all possible segment splits
-        variants.add(f"{code_clean[:5]}-{code_clean[5:9]}-{code_clean[9:]}")  # 5-4-2
-        variants.add(f"{code_clean[:5]}-{code_clean[5:9]}")  # 5-4 (product level)
-        variants.add(f"{code_clean[:5]}-{code_clean[5:8]}-{code_clean[8:]}")  # 5-3-3 (uncommon)
-        variants.add(f"{code_clean[:6]}-{code_clean[6:10]}-{code_clean[10:]}")  # 6-4-1 (uncommon)
-        variants.add(f"{code_clean[:4]}-{code_clean[4:8]}-{code_clean[8:]}")  # 4-4-3 (uncommon)
+        # 11-digit NDC (5-4-2 format) → extract 5-4 (product level)
+        variants.add(f"{code_clean[:5]}-{code_clean[5:9]}")  # 5-4 product level
         
     elif len(code_clean) == 10:
-        # 10 digits - try all 3 standard formats and normalize to 11-digit
+        # 10-digit NDC - three possible formats, all should normalize to 5-4
         
-        # Format 1: 4-4-2 → normalize to 5-4-2 (pad first with 0)
-        variants.add(f"{code_clean[:4]}-{code_clean[4:8]}-{code_clean[8:]}")  # 4-4-2
-        variants.add(f"0{code_clean[:4]}-{code_clean[4:8]}-{code_clean[8:]}")  # normalized 5-4-2
-        variants.add(f"{code_clean[:4]}-{code_clean[4:8]}")  # 4-4 (product level)
-        variants.add(f"0{code_clean[:4]}-{code_clean[4:8]}")  # normalized 5-4
+        # Format 1: 4-4-2 → pad first segment to get 5-4
+        variants.add(f"0{code_clean[:4]}-{code_clean[4:8]}")  # 5-4
         
-        # Format 2: 5-3-2 → normalize to 5-4-2 (pad second with 0)
-        variants.add(f"{code_clean[:5]}-{code_clean[5:8]}-{code_clean[8:]}")  # 5-3-2
-        variants.add(f"{code_clean[:5]}-0{code_clean[5:8]}-{code_clean[8:]}")  # normalized 5-4-2
-        variants.add(f"{code_clean[:5]}-{code_clean[5:8]}")  # 5-3 (product level)
-        variants.add(f"{code_clean[:5]}-0{code_clean[5:8]}")  # normalized 5-4
+        # Format 2: 5-3-2 → pad second segment to get 5-4
+        variants.add(f"{code_clean[:5]}-0{code_clean[5:8]}")  # 5-4
         
-        # Format 3: 5-4-1 → normalize to 5-4-2 (pad third with 0)
-        variants.add(f"{code_clean[:5]}-{code_clean[5:9]}-{code_clean[9]}")  # 5-4-1
-        variants.add(f"{code_clean[:5]}-{code_clean[5:9]}-0{code_clean[9]}")  # normalized 5-4-2
-        variants.add(f"{code_clean[:5]}-{code_clean[5:9]}")  # 5-4 (product level)
+        # Format 3: 5-4-1 → extract first 5-4
+        variants.add(f"{code_clean[:5]}-{code_clean[5:9]}")  # 5-4
         
     elif len(code_clean) == 9:
-        # 9 digits - try padding to 10
-        variants.add(f"0{code_clean}")
-        variants.add(f"{code_clean}0")
+        # 9-digit NDC - try padding appropriately
+        # Could be 4-4-1 → pad to 5-4
+        variants.add(f"0{code_clean[:4]}-{code_clean[4:8]}")  # 5-4
+        # Could be 5-3-1 → pad to 5-4
+        variants.add(f"{code_clean[:5]}-0{code_clean[5:8]}")  # 5-4
+        
+    # Also try the code as-is in case it's already in 5-4 format with dashes
+    if '-' in code:
+        variants.add(code)
     
     return list(variants)
 
