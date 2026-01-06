@@ -2,7 +2,7 @@
 """
 Build ATC code descriptions map for AHS.
 
-Reads ATC codes from ATC_codes_for_ahs.csv, looks up each code,
+Reads ATC codes from data/atc_codes.txt, looks up each code,
 and saves the results to data/atc_descriptions_map.json.
 
 Usage:
@@ -10,7 +10,6 @@ Usage:
 """
 
 import json
-import csv
 from pathlib import Path
 from tqdm import tqdm
 
@@ -26,23 +25,20 @@ def load_atc_mapping():
 
 def load_atc_codes(filepath):
     """
-    Load ATC codes from a CSV file.
+    Load ATC codes from a text file (one code per line).
     
     Args:
-        filepath: Path to CSV file with ATC_code column
+        filepath: Path to text file with ATC codes
         
     Returns:
         List of unique ATC codes
     """
     codes = []
     with open(filepath, 'r', encoding='utf-8') as f:
-        reader = csv.reader(f)
-        next(reader)  # skip header
-        for row in reader:
-            if row and row[0].strip():
-                code = row[0].strip().replace('*', '').replace('"', '')
-                if code:
-                    codes.append(code)
+        for line in f:
+            code = line.strip().replace('*', '').replace('"', '')
+            if code:
+                codes.append(code)
     # Remove duplicates while preserving order
     return list(dict.fromkeys(codes))
 
@@ -135,9 +131,9 @@ def main():
     atc_data = load_atc_mapping()
     print(f"   Loaded {len(atc_data)} ATC codes")
     
-    # Load ATC codes from CSV
+    # Load ATC codes from text file
     print("\n📄 Loading ATC codes...")
-    codes_file = base_dir / "ATC_codes_for_ahs.csv"
+    codes_file = data_dir / "atc_codes.txt"
     atc_codes = load_atc_codes(codes_file)
     print(f"   Loaded {len(atc_codes)} codes from {codes_file.name}")
     
